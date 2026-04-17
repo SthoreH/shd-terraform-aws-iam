@@ -1,107 +1,128 @@
-# Terraform AWS \<module-name\> Module
+# Terraform AWS IAM Role Module
 
-<!-- TODO: Replace <module-name> with the actual module name (e.g., s3-bucket, rds-cluster, ecs-service). -->
-<!-- TODO: Write a short description of what this module provisions and why someone would use it. -->
+Terraform module para criação de IAM Roles e Policies na AWS, com suporte a anexação de políticas existentes.
 
-This Terraform module creates [TODO: describe the AWS resources this module manages].
+![Terraform](https://img.shields.io/badge/terraform-%3E%3D1.14.8-blueviolet)
+![AWS Provider](https://img.shields.io/badge/aws--provider-6.40.0-orange)
 
 ## Features
 
-<!-- TODO: List the main features/resources created by this module. -->
-
-- TODO: Feature 1
-- TODO: Feature 2
+- Criação de IAM Role com trust policy configurável
+- Criação de IAM Policies customizadas
+- Attach automático das policies criadas à Role
+- Attach de policies existentes via ARN
+- Criação de policies sem Role (modo standalone)
+- Tags obrigatórias para rastreabilidade (`Repository`)
 
 ## Usage
 
-### Basic Example
+### Role com policies customizadas
 
 ```hcl
-# TODO: Replace with a minimal working example for this module.
-module "example" {
-  source = "git::https://github.com/<org>/<repo>.git?ref=v0.0.1" # TODO: update source
+module "iam_role" {
+  source = "github.com/DanHenrique/terraform-aws-iam-role?ref=v1.0.1"
 
-  name = "my-resource-name" # TODO: update variable names and values
+  role_name                   = "MyRole"
+  assume_role_policy_document = file("./role/role.json")
+
+  policies = [
+    {
+      name        = "MyPolicy"
+      description = "Policy for resource access"
+      document    = file("./policy/policy.json")
+    }
+  ]
 
   tags = {
-    git_repository = "https://github.com/<org>/<repo>" # TODO: update
-    environment    = "dev"
+    Repository = "https://github.com/DanHenrique/terraform-aws-iam-role"
   }
 }
 ```
 
-### Complete Example
+### Role com policies existentes
 
 ```hcl
-# TODO: Replace with a complete example showcasing all available variables.
-module "example" {
-  source = "git::https://github.com/<org>/<repo>.git?ref=v0.0.1" # TODO: update source
+module "iam_role" {
+  source = "github.com/DanHenrique/terraform-aws-iam-role?ref=v1.0.1"
 
-  name = "my-resource-name" # TODO: update
+  role_name                   = "MyRole"
+  assume_role_policy_document = file("./role/role.json")
 
-  # TODO: add all optional variables with example values
+  existing_policy_arns = [
+    "arn:aws:iam::aws:policy/ReadOnlyAccess"
+  ]
 
   tags = {
-    git_repository = "https://github.com/<org>/<repo>" # TODO: update
-    environment    = "production"
+    Repository = "https://github.com/DanHenrique/terraform-aws-iam-role"
   }
 }
 ```
 
-## Requirements
+### Apenas policies (sem Role)
 
-| Name | Version |
-|------|---------|
-| terraform | >= 1.0 |
-| aws | >= 5.0 |
+```hcl
+module "iam_policies" {
+  source = "github.com/DanHenrique/terraform-aws-iam-role?ref=v1.0.1"
 
-## Providers
+  policies = [
+    {
+      name        = "MyStandalonePolicy"
+      description = "Standalone policy"
+      document    = file("./policy/policy.json")
+    }
+  ]
 
-| Name | Version |
-|------|---------|
-| aws | >= 5.0 |
+  tags = {
+    Repository = "https://github.com/DanHenrique/terraform-aws-iam-role"
+  }
+}
+```
 
 ## Inputs
 
-<!-- TODO: Update the table below to reflect the actual variables defined in variables.tf. -->
+| Nome | Descrição | Tipo | Default | Obrigatório |
+|------|-----------|------|---------|:-----------:|
+| `role_name` | Nome da IAM Role a ser criada. Se `null`, apenas as policies serão criadas | `string` | `null` | não |
+| `assume_role_policy_document` | JSON da trust policy (obrigatório se `role_name` for fornecido) | `string` | `null` | condicional |
+| `policies` | Lista de policies customizadas a criar e anexar à Role | `list(object)` | `[]` | não |
+| `existing_policy_arns` | Lista de ARNs de policies existentes para anexar à Role | `list(string)` | `[]` | não |
+| `tags` | Tags aplicadas aos recursos. A tag `Repository` é obrigatória | `map(string)` | `{}` | sim |
 
-| Name | Description | Type | Default | Required |
-|------|-------------|------|---------|:--------:|
-| name | TODO: describe what this name identifies | `string` | n/a | yes |
-| tags | Tags to apply to all resources. `git_repository` tag is mandatory. | `map(string)` | `{}` | yes |
+### Objeto `policies`
+
+| Campo | Descrição | Tipo |
+|-------|-----------|------|
+| `name` | Nome da policy | `string` |
+| `description` | Descrição da policy | `string` |
+| `document` | JSON da policy | `string` |
 
 ## Outputs
 
-<!-- TODO: Update the table below to reflect the actual outputs defined in outputs.tf. -->
+| Nome | Descrição |
+|------|-----------|
+| `role_arn` | ARN da Role criada (`null` se `role_name` não for fornecido) |
+| `role_name` | Nome da Role criada (`null` se `role_name` não for fornecido) |
+| `policy_arns` | Map de `index => ARN` das policies criadas pelo módulo |
 
-| Name | Description |
-|------|-------------|
-| TODO | TODO |
+## Requisitos
+
+| Ferramenta | Versão |
+|------------|--------|
+| Terraform | `1.14.8` |
+| AWS Provider | `6.40.0` |
 
 ## Examples
 
-See the [examples](examples/) directory for complete usage examples:
+- [Exemplo completo](examples/)
 
-<!-- TODO: Update the list below when you add or rename examples. -->
+## CI/CD
 
-- [Complete](examples/complete/) — Full configuration example with all available options
+Este módulo possui uma esteira de validação automática via GitHub Actions que é executada em todo Pull Request para `main`:
 
-## Notes
+| Job | Descrição |
+|-----|-----------|
+| Validate PR | Valida título (Conventional Commits) e descrição do PR |
+| Terraform Validation | `fmt -check`, `init -backend=false` e `validate` |
+| TFLint | Análise estática do código Terraform |
 
-<!-- TODO: Add any important notes, constraints, or gotchas for users of this module. -->
-
-- The `git_repository` tag is mandatory and will cause a validation error if not provided.
-- TODO: Add any other relevant notes.
-
-## Contributing
-
-When contributing to this module, please ensure:
-
-1. All examples are tested and working.
-2. Documentation is updated for any new variables or outputs.
-3. Follow Terraform best practices and naming conventions.
-4. PR titles follow the [Conventional Commits](https://www.conventionalcommits.org/) specification.
-
-## License
-
-This project is licensed under the MIT License — see the LICENSE file for details.
+Ao realizar merge na `main`, um release é gerado automaticamente via [semantic-release](https://semantic-release.gitbook.io/).
