@@ -3,7 +3,7 @@ resource "aws_iam_role" "role" {
 
   name                 = "sthore-${var.role_name}"
   assume_role_policy   = var.assume_role_policy_document
-  permissions_boundary = var.permissions_boundary_arn
+  permissions_boundary = local.permissions_boundary
   tags                 = var.tags
 }
 
