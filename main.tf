@@ -1,9 +1,10 @@
 resource "aws_iam_role" "role" {
   count = var.role_name != null ? 1 : 0
 
-  name               = "sthore-${var.role_name}"
-  assume_role_policy = var.assume_role_policy_document
-  tags               = var.tags
+  name                 = "sthore-${var.role_name}"
+  assume_role_policy   = var.assume_role_policy_document
+  permissions_boundary = var.permissions_boundary_arn
+  tags                 = var.tags
 }
 
 resource "aws_iam_policy" "policies" {
