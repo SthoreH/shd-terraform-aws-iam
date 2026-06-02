@@ -4,6 +4,12 @@ variable "role_name" {
   default     = null
 }
 
+variable "product" {
+  description = "Nome do produto para o qual a Role e as policies estão sendo criadas (opcional - usado para prefix)"
+  type        = string
+  default     = null
+}
+
 variable "assume_role_policy_document" {
   description = "Documento JSON da política de confiança da Role (obrigatório se role_name for fornecido)"
   type        = string
